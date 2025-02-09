@@ -42,6 +42,13 @@ check_services
 export POSTGRES_URL="postgresql://postgres:postgres@localhost:5432/chatdb"
 export DATABASE_URL="$POSTGRES_URL"
 
+# Kill any process running on port 3000
+echo "🔄 Checking for existing process on port 3000..."
+if lsof -i :3000 > /dev/null; then
+    echo "Found existing process on port 3000. Terminating..."
+    lsof -ti :3000 | xargs kill -9
+fi
+
 # Start the web server
 echo "🌐 Starting web server..."
 if [ -f ~/.npm-global/bin/pnpm ]; then
