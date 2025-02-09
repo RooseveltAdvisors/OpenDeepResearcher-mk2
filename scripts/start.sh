@@ -21,11 +21,10 @@ else
     exit 1
 fi
 
-# Load environment variables
-echo "🔄 Loading environment variables..."
-set -a # automatically export all variables
-source .env
-set +a
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
 
 # Function to check if services are running
 check_services() {
@@ -48,7 +47,7 @@ echo "🌐 Starting web server..."
 if [ -f ~/.npm-global/bin/pnpm ]; then
     ~/.npm-global/bin/pnpm build && ~/.npm-global/bin/pnpm start
 else
-    npm run build && npm start
+    npm run dev
 fi
 
 echo "✅ Application is starting up! Please wait..."
