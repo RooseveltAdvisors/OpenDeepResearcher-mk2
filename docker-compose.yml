@@ -1,0 +1,36 @@
+version: '3.8'
+
+x-environment: &default-environment
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: chatdb
+  # Add any other environment variables you need here
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres-db
+    environment: *default-environment
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  pgdata:
+
+# networks:
+#   app-network:
+#     driver: bridge 

@@ -1,16 +1,43 @@
-import { Redis } from '@upstash/redis';
-import { Ratelimit } from '@upstash/ratelimit';
+class SimpleRateLimiter {
+  private requests: Map<string, { count: number; reset: number }> = new Map();
+  private readonly maxLimit = 100; // requests per window
+  private readonly timeWindow = 60 * 1000; // 1 minute in milliseconds
 
-// Create a new Redis instance
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
+  async rateLimit(identifier: string) {
+    const now = Date.now();
+    const userRequests = this.requests.get(identifier);
 
-// Create a new rate limiter that allows 5 requests per 60 seconds
-export const rateLimiter = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(5, '60 s'),
-  analytics: true,
-  prefix: '@upstash/ratelimit',
-});
+    if (!userRequests || userRequests.reset < now) {
+      // Reset or create new window
+      this.requests.set(identifier, {
+        count: 1,
+        reset: now + this.timeWindow,
+      });
+      return {
+        success: true,
+        limit: this.maxLimit,
+        remaining: this.maxLimit - 1,
+        reset: now + this.timeWindow,
+      };
+    }
+
+    if (userRequests.count >= this.maxLimit) {
+      return {
+        success: false,
+        limit: this.maxLimit,
+        remaining: 0,
+        reset: userRequests.reset,
+      };
+    }
+
+    userRequests.count += 1;
+    return {
+      success: true,
+      limit: this.maxLimit,
+      remaining: this.maxLimit - userRequests.count,
+      reset: userRequests.reset,
+    };
+  }
+}
+
+export const rateLimiter = new SimpleRateLimiter();

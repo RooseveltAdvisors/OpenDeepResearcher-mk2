@@ -22,8 +22,52 @@ Check out the demo [here](https://x.com/nickscamara_/status/1886459999905521912)
   - Styling with [Tailwind CSS](https://tailwindcss.com)
   - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
 - Data Persistence
-  - [Vercel Postgres powered by Neon](https://vercel.com/storage/postgres) for saving chat history and user data
-  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
+  - PostgreSQL database (via Docker) for saving chat history and user data
+- In-memory rate limiting for API protection
+
+Both databases are automatically configured when you run the application using Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+Environment variables for database connections:
+```bash
+# PostgreSQL connection
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/chatdb"
+
+# Redis connection
+REDIS_URL="redis://localhost:6379"
+```
+
+### Useful Docker Commands
+
+```bash
+# Start all services (PostgreSQL and Redis)
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+
+# View logs for all services
+docker-compose logs -f
+
+# View logs for specific service
+docker-compose logs -f postgres
+docker-compose logs -f redis
+
+# Stop services but keep volumes
+docker-compose down
+
+# Stop services and remove volumes
+docker-compose down -v
+
+# Access database CLIs
+docker-compose exec postgres psql -U postgres -d chatdb
+docker-compose exec redis redis-cli
+```
+
+- Local file storage for uploads
 - [NextAuth.js](https://github.com/nextauthjs/next-auth)
   - Simple and secure authentication
 
@@ -33,94 +77,97 @@ This template ships with OpenAI `gpt-4o` as the default. However, with the [AI S
 
 This repo is compatible with [OpenRouter](https://openrouter.ai/) and [OpenAI](https://openai.com/). To use OpenRouter, you need to set the `OPENROUTER_API_KEY` environment variable.
 
-## Deploy Your Own
+## Prerequisites
 
-You can deploy your own version of the Next.js AI Chatbot to Vercel with one click:
+Before starting, make sure you have:
+- [Docker](https://www.docker.com/get-started/) installed
+- [Conda](https://docs.conda.io/en/latest/miniconda.html) installed (for Python and Node.js environment)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fnickscamara%2Fopen-deep-research&env=AUTH_SECRET,OPENAI_API_KEY,OPENROUTER_API_KEY,FIRECRAWL_API_KEY&envDescription=Learn%20more%20about%20how%20to%20get%20the%20API%20Keys%20for%20the%20application&envLink=https%3A%2F%2Fgithub.com%2Fvercel%2Fai-chatbot%2Fblob%2Fmain%2F.env.example&demo-title=AI%20Chatbot&demo-description=An%20Open-Source%20AI%20Chatbot%20Template%20Built%20With%20Next.js%20and%20the%20AI%20SDK%20by%20Vercel.&demo-url=https%3A%2F%2Fchat.vercel.ai&stores=[{%22type%22:%22postgres%22},{%22type%22:%22blob%22}])
+The initialization script will automatically:
+- Create a conda environment with Python and Node.js
+- Install pnpm
+- Install all required dependencies
+- Set up database containers (PostgreSQL and Redis)
 
-## Running locally
+## Configuration
 
-You will need to use the environment variables [defined in `.env.example`](.env.example) to run Next.js AI Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
+The application uses two configuration files:
 
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various OpenAI and authentication provider accounts.
-
-1. Install Vercel CLI: `npm i -g vercel`
-2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
-3. Download your environment variables: `vercel env pull`
-
-# 1. First install all dependencies
-```bash
-pnpm install
+1. `env-config.xml` for environment name:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <environment>
+        <name>open-deep-research</name>
+    </environment>
+</config>
 ```
 
-# 2. Then run database migrations
-```bash
-pnpm db:migrate
+2. `environment.yml` for conda environment setup:
+```yaml
+name: open-deep-research
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - nodejs=20
+  - npm=10
+  - pip
 ```
 
-# 3. Run the app
+## Scripts
+
+The application comes with two utility scripts:
+
+### 1. Initialization Script (`scripts/init.sh`)
+
+This script performs first-time setup and should be run only once. It will:
+- Create a new conda environment
+- Install all dependencies
+- Set up the database
+- Create initial configurations
+
 ```bash
-pnpm dev
+chmod +x scripts/init.sh
+./scripts/init.sh
 ```
 
-Your app template should now be running on [localhost:3000](http://localhost:3000/).
+⚠️ **Warning**: Running this script will:
+- Reset your conda environment
+- Reset your database
+- Reset your configurations
+- Create new environment files
 
+The script will ask for confirmation before proceeding.
 
-# Models dependencies
+### 2. Start Script (`scripts/start.sh`)
 
-If you want to use a model other than the default, you will need to install the dependencies for that model.
+This script starts the application for regular use. It will:
+- Activate the conda environment
+- Check if services are running
+- Start the web server
 
-
-DeepSeek:
 ```bash
-pnpm add @ai-sdk/deepseek
+chmod +x scripts/start.sh
+./scripts/start.sh
 ```
 
-TogetherAI's Deepseek:
+Use this script for your daily development work. It's safe to run multiple times and won't reset your environment.
+
+## First Time Setup
+
+1. Make the scripts executable:
 ```bash
-pnpm add @ai-sdk/togetherai
+chmod +x scripts/init.sh scripts/start.sh
 ```
 
-Note: Maximum rate limit https://docs.together.ai/docs/rate-limits
-
-## Reasoning Model Configuration
-
-The application uses a separate model for reasoning tasks (like research analysis and structured outputs). This can be configured using the `REASONING_MODEL` environment variable.
-
-### Available Options
-
-| Provider | Models | Notes |
-|----------|--------|-------|
-| OpenAI | `gpt-4o`, `o1`, `o3-mini` | Native JSON schema support |
-| TogetherAI | `deepseek-ai/DeepSeek-R1` | Requires `BYPASS_JSON_VALIDATION=true` |
-| Deepseek | `deepseek-reasoner` | Requires `BYPASS_JSON_VALIDATION=true` |
-
-### Important Notes
-
-- Only certain OpenAI models (gpt-4o, o1, o3-mini) natively support structured JSON outputs
-- Other models (deepseek-reasoner) can be used but may require disabling JSON schema validation
-- When using models that don't support JSON schema:
-  - Set `BYPASS_JSON_VALIDATION=true` in your .env file
-  - This allows non-OpenAI models to be used for reasoning tasks
-  - Note: Without JSON validation, the model responses may be less structured
-- The reasoning model is used for tasks that require structured thinking and analysis, such as:
-  - Research analysis
-  - Document suggestions
-  - Data extraction
-  - Structured responses
-- If no `REASONING_MODEL` is specified, it defaults to `o1-mini`
-- If an invalid model is specified, it will fall back to `o1-mini`
-
-### Usage
-
-Add to your `.env` file:
+2. Run the initialization script (only once):
 ```bash
-# Choose one of: deepseek-reasoner, deepseek-ai/DeepSeek-R1
-REASONING_MODEL=deepseek-reasoner
-
-# Required when using models that don't support JSON schema (like deepseek-reasoner)
-BYPASS_JSON_VALIDATION=true
+./scripts/init.sh
 ```
 
-The reasoning model is automatically used when the application needs structured outputs or complex analysis, regardless of which model the user has selected for general chat.
+3. For subsequent runs, use the start script:
+```bash
+./scripts/start.sh
+```

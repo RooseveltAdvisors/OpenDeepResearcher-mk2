@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <environment>
+        <name>open-deep-research</name>
+        <python_version>3.11</python_version>
+    </environment>
+</config> 
