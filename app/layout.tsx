@@ -9,7 +9,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://extract.chat'),
-  title: 'Extract Chat - by Firecrawl',
+  title: 'Deep Research - by Jon Roosevelt',
   description:
     'Extract Chat allows you to extract information from any website with the help of an AI chatbot.',
 };

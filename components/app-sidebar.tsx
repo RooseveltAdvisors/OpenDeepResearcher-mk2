@@ -40,14 +40,14 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 </span>
               </Link>
               <Link
-                href="https://firecrawl.dev/"
+                href="https://www.jonroosevelt.com/"
                 onClick={() => {
                   setOpenMobile(false);
                 }}
                 className="flex flex-row gap-3 items-center"
               >
                 <span className="text-sm text-muted-foreground leading-3">
-                  by Firecrawl 🔥
+                  Jon Roosevelt
                 </span>
               </Link>
             </div>
